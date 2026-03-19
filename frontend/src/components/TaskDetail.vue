@@ -132,6 +132,10 @@
                 @update:modelValue="changeRepository"
               />
             </div>
+            <div class="sm:col-span-2">
+              <div class="mb-2 text-sm text-ink-gray-5">GitHub</div>
+              <GitHubConnectionBadge :redirect-after="$route.fullPath" />
+            </div>
           </div>
 
           <div v-if="linkedRecordPills.length" class="mt-4 border-t border-outline-gray-1 pt-4">
@@ -476,6 +480,10 @@
             placement="end"
           />
         </div>
+        <div class="col-span-2 border-t pt-4">
+          <div class="mb-2 text-sm text-ink-gray-5">GitHub</div>
+          <GitHubConnectionBadge :redirect-after="$route.fullPath" />
+        </div>
         <div class="col-span-2 border-t pt-4" v-if="linkedRecordPills.length">
           <div class="mb-2 text-sm text-ink-gray-5">Linked work</div>
           <div class="flex flex-wrap gap-2">
@@ -563,6 +571,7 @@ import CommentsList from '@/components/CommentsList.vue'
 import TaskStatusIcon from '@/components/NewTaskDialog/TaskStatusIcon.vue'
 import TaskPriorityIcon from '@/components/icons/TaskPriorityIcon.vue'
 import DropdownMoreOptions from './DropdownMoreOptions.vue'
+import GitHubConnectionBadge from '@/components/GitHubConnectionBadge.vue'
 import { Dropdown, LoadingText, DatePicker, Button, Combobox } from 'frappe-ui'
 import { vFocus } from '@/directives'
 import { activeUsers } from '@/data/users'
