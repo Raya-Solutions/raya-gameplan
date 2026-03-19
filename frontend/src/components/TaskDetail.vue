@@ -135,6 +135,9 @@
             <div class="sm:col-span-2">
               <div class="mb-2 text-sm text-ink-gray-5">GitHub</div>
               <GitHubConnectionBadge :redirect-after="$route.fullPath" />
+              <div class="mt-3">
+                <GitDeliveryPanel :task-name="taskId" />
+              </div>
             </div>
           </div>
 
@@ -483,6 +486,9 @@
         <div class="col-span-2 border-t pt-4">
           <div class="mb-2 text-sm text-ink-gray-5">GitHub</div>
           <GitHubConnectionBadge :redirect-after="$route.fullPath" />
+          <div class="mt-3">
+            <GitDeliveryPanel :task-name="taskId" />
+          </div>
         </div>
         <div class="col-span-2 border-t pt-4" v-if="linkedRecordPills.length">
           <div class="mb-2 text-sm text-ink-gray-5">Linked work</div>
@@ -572,6 +578,7 @@ import TaskStatusIcon from '@/components/NewTaskDialog/TaskStatusIcon.vue'
 import TaskPriorityIcon from '@/components/icons/TaskPriorityIcon.vue'
 import DropdownMoreOptions from './DropdownMoreOptions.vue'
 import GitHubConnectionBadge from '@/components/GitHubConnectionBadge.vue'
+import GitDeliveryPanel from '@/components/GitDeliveryPanel.vue'
 import { Dropdown, LoadingText, DatePicker, Button, Combobox } from 'frappe-ui'
 import { vFocus } from '@/directives'
 import { activeUsers } from '@/data/users'
