@@ -3,6 +3,9 @@
     <PageHeader>
       <Breadcrumbs class="h-7" :items="[{ label: 'Agile Delivery', route: { name: 'AgileDelivery' } }]" />
       <div class="flex items-center gap-2">
+        <Button v-if="showReleasePanel" variant="subtle" @click="releaseDrawerOpen = !releaseDrawerOpen">
+          {{ releaseDrawerOpen ? 'Hide Release' : 'Release' }}
+        </Button>
         <Button variant="subtle" @click="refreshActiveSprint()">Refresh sprint</Button>
         <Button variant="solid" @click="openNewTaskDialog">
           <template #prefix>
@@ -92,7 +95,7 @@
         />
       </Transition>
 
-      <!-- Slide-over drawer -->
+      <!-- Slide-over drawer for task -->
       <Transition
         enter-active-class="transition-transform duration-200 ease-out"
         leave-active-class="transition-transform duration-150 ease-in"
@@ -128,6 +131,31 @@
           </div>
         </aside>
       </Transition>
+
+      <!-- Release panel drawer -->
+      <Transition
+        enter-active-class="transition-transform duration-200 ease-out"
+        leave-active-class="transition-transform duration-150 ease-in"
+        enter-from-class="translate-x-full"
+        enter-to-class="translate-x-0"
+        leave-from-class="translate-x-0"
+        leave-to-class="translate-x-full"
+      >
+        <aside
+          v-if="releaseDrawerOpen && currentSprintName"
+          class="fixed inset-y-0 right-0 z-[59] flex w-full flex-col border-l bg-surface-white shadow-2xl sm:w-[24rem]"
+        >
+          <div class="flex items-center justify-between border-b px-4 py-2.5">
+            <span class="text-sm font-semibold text-ink-gray-8">Sprint Release</span>
+            <Button variant="ghost" size="sm" @click="releaseDrawerOpen = false">
+              <LucideX class="h-4 w-4" />
+            </Button>
+          </div>
+          <div class="min-h-0 flex-1 overflow-y-auto p-4">
+            <SprintReleasePanel :sprint-name="currentSprintName" />
+          </div>
+        </aside>
+      </Transition>
     </Teleport>
 </template>
 
@@ -138,8 +166,10 @@ import { useRoute, useRouter } from 'vue-router'
 import PageHeader from '@/components/PageHeader.vue'
 import KeyboardShortcut from '@/components/KeyboardShortcut.vue'
 import TaskDetail from '@/components/TaskDetail.vue'
+import SprintReleasePanel from '@/components/SprintReleasePanel.vue'
 import AgileTaskBoard from '@/components/agile/AgileTaskBoard.vue'
 import { activeSprint, activeSprintSummary, refreshActiveSprint } from '@/data/opsMaturity'
+import { isGitHubConnected } from '@/data/githubConnection'
 import { showNewTaskDialog } from '@/components/NewTaskDialog'
 import { useUser } from '@/data/users'
 
@@ -150,6 +180,11 @@ import LucideX from '~icons/lucide/x'
 const route = useRoute()
 const router = useRouter()
 const boardRef = useTemplateRef<any>('boardRef')
+
+// Release panel state
+const releaseDrawerOpen = ref(false)
+const currentSprintName = computed(() => activeSprint.data?.sprint?.name || '')
+const showReleasePanel = computed(() => isGitHubConnected.value && currentSprintName.value && scope.value === 'active')
 
 // Drawer is only allowed to render after mount completes and any
 // persisted ?task= param has been stripped. This prevents a flash
