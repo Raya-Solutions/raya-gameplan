@@ -48,6 +48,11 @@ let router = createRouter({
       component: () => import('@/pages/Drafts.vue'),
     },
     {
+      name: 'AgileDelivery',
+      path: '/agile',
+      component: () => import('@/pages/AgileDelivery.vue'),
+    },
+    {
       name: 'MyTasks',
       path: '/tasks',
       component: () => import('@/pages/MyTasks.vue'),

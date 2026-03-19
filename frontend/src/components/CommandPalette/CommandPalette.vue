@@ -44,6 +44,7 @@
                 <div
                   @click="onSelection(item)"
                   @mouseover="onItemHover(item)"
+                  :data-command-item="item.name"
                   class="rounded"
                   :class="[item.isActive ? 'bg-surface-gray-3' : '']"
                   :ref="
@@ -115,6 +116,7 @@ import ItemProject from './ItemProject.vue'
 import Item from './Item.vue'
 import UserAvatar from '../UserAvatar.vue'
 import { spaces, useSpace } from '@/data/spaces'
+import { useGitHubTaskContext } from '@/data/opsMaturity'
 import { hideCommandPalette, show, toggleCommandPalette } from './commandPalette'
 import KeyboardShortcut from '../KeyboardShortcut.vue'
 
@@ -133,6 +135,9 @@ import LucideMessageSquare from '~icons/lucide/message-square'
 import LucideMessageSquarePlus from '~icons/lucide/message-square-plus'
 import LucideFilePlus from '~icons/lucide/file-plus'
 import LucideSquarePlus from '~icons/lucide/square-plus'
+import LucideGithub from '~icons/lucide/github'
+import LucideGitPullRequest from '~icons/lucide/git-pull-request'
+import LucideFolderGit2 from '~icons/lucide/folder-git-2'
 import { showNewTaskDialog } from '../NewTaskDialog'
 import { GPPage } from '@/types/doctypes'
 
@@ -144,6 +149,11 @@ const scrollContainerRef = useTemplateRef<HTMLDivElement>('scrollContainerRef')
 const activeItemRef = ref<HTMLDivElement | null>(null)
 
 const router = useRouter()
+const currentTaskId = computed(() => {
+  const taskId = router.currentRoute.value.params?.taskId
+  return typeof taskId === 'string' ? taskId : null
+})
+const githubTaskContext = useGitHubTaskContext(currentTaskId)
 
 interface SearchResult {
   title: string
@@ -231,122 +241,193 @@ const transformedSearchResults = computed(() => {
   }))
 })
 
-const shortcuts = computed((): CommandPaletteGroup[] => [
-  {
-    title: 'Jump to',
-    items: [
-      {
-        title: 'Advanced Search',
-        name: 'search',
-        icon: () => h(LucideSearch),
-        route: { name: 'Search' },
-      },
-      {
-        title: 'Home',
-        name: 'home',
-        icon: () => h(LucideHome),
-        route: { name: 'Home' },
-      },
-      {
-        title: 'Tasks',
-        name: 'tasks',
-        icon: () => h(LucideListTodo),
-        route: { name: 'MyTasks' },
-      },
-      {
-        title: 'Pages',
-        name: 'pages',
-        icon: () => h(LucideFiles),
-        route: { name: 'MyPages' },
-      },
-      {
-        title: 'People',
-        name: 'people',
-        icon: () => h(LucideUsers),
-        route: { name: 'People' },
-        condition: () => useUser().isNotGuest,
-      },
-      {
-        title: 'Inbox',
-        name: 'inbox',
-        icon: () => h(LucideBell),
-        route: { name: 'Notifications' },
-        condition: () => useUser().isNotGuest,
-      },
-    ].filter((item) => (item.condition ? item.condition() : true)),
-  },
-  {
-    title: (() => {
-      let spaceId = (router.currentRoute.value.params?.spaceId as string) ?? null
-      let space = useSpace(spaceId)
-      return space.value ? `Add new in ${space.value.title}` : 'Add new'
-    })(),
-    items: [
-      {
-        title: 'Add Discussion',
-        name: 'add-discussion',
-        search: 'Add Discussion New Discussion',
-        icon: () => h(LucideMessageSquarePlus),
-        onClick() {
-          let spaceId = router.currentRoute.value.params?.spaceId ?? null
-          router.push({ name: 'NewDiscussion', query: { spaceId } })
+const shortcuts = computed((): CommandPaletteGroup[] => {
+  const groups: CommandPaletteGroup[] = [
+    {
+      title: 'Jump to',
+      items: [
+        {
+          title: 'Advanced Search',
+          name: 'search',
+          icon: () => h(LucideSearch),
+          route: { name: 'Search' },
         },
-      },
-      {
-        title: 'Add Task',
-        name: 'add-task',
-        search: 'Add Task New Task',
-        icon: () => h(LucideSquarePlus),
-        onClick() {
-          let spaceId = router.currentRoute.value?.params?.spaceId ?? null
-          showNewTaskDialog({
-            defaults: {
-              assigned_to: useUser('sessionUser').name,
-              project: spaceId || '',
-            },
-            onSuccess(doc) {
-              if (doc.project) {
-                router.push({
-                  name: 'SpaceTask',
-                  params: { taskId: doc.name, spaceId: doc.project },
-                })
-              } else {
-                router.push({ name: 'Task', params: { taskId: doc.name } })
-              }
-            },
-          })
+        {
+          title: 'Home',
+          name: 'home',
+          icon: () => h(LucideHome),
+          route: { name: 'Home' },
         },
-      },
-      {
-        title: 'Add Page',
-        name: 'add-page',
-        search: 'Add Page New Page',
-        icon: () => h(LucideFilePlus),
-        onClick() {
-          let spaceId = router.currentRoute.value.params?.spaceId ?? null
-
-          const newPage = useNewDoc<GPPage>('GP Page', {
-            title: 'Untitled',
-            content: '',
-          })
-
-          if (spaceId) {
-            newPage.doc.project = spaceId as string
-          }
-
-          newPage.submit().then((doc) => {
-            router.push({
-              name: doc.project ? 'SpacePage' : 'Page',
-              params: doc.project
-                ? { pageId: doc.name, slug: doc.slug, spaceId: doc.project }
-                : { pageId: doc.name, slug: doc.slug },
+        {
+          title: 'Agile Delivery',
+          name: 'agile-delivery',
+          search: 'Agile Delivery Sprint Board Backlog',
+          icon: () => h(LucideListTodo),
+          route: { name: 'AgileDelivery' },
+        },
+        {
+          title: 'Agile Backlog',
+          name: 'agile-backlog',
+          search: 'Agile Backlog Unscheduled Tasks',
+          icon: () => h(LucideListTodo),
+          route: { name: 'AgileDelivery', query: { scope: 'backlog' } },
+        },
+        {
+          title: 'Tasks',
+          name: 'tasks',
+          icon: () => h(LucideListTodo),
+          route: { name: 'MyTasks' },
+        },
+        {
+          title: 'Pages',
+          name: 'pages',
+          icon: () => h(LucideFiles),
+          route: { name: 'MyPages' },
+        },
+        {
+          title: 'People',
+          name: 'people',
+          icon: () => h(LucideUsers),
+          route: { name: 'People' },
+          condition: () => useUser().isNotGuest,
+        },
+        {
+          title: 'Inbox',
+          name: 'inbox',
+          icon: () => h(LucideBell),
+          route: { name: 'Notifications' },
+          condition: () => useUser().isNotGuest,
+        },
+      ].filter((item) => (item.condition ? item.condition() : true)),
+    },
+    {
+      title: (() => {
+        let spaceId = (router.currentRoute.value.params?.spaceId as string) ?? null
+        let space = useSpace(spaceId)
+        return space.value ? `Add new in ${space.value.title}` : 'Add new'
+      })(),
+      items: [
+        {
+          title: 'Add Discussion',
+          name: 'add-discussion',
+          search: 'Add Discussion New Discussion',
+          icon: () => h(LucideMessageSquarePlus),
+          onClick() {
+            let spaceId = router.currentRoute.value.params?.spaceId ?? null
+            router.push({ name: 'NewDiscussion', query: { spaceId } })
+          },
+        },
+        {
+          title: 'Add Task',
+          name: 'add-task',
+          search: 'Add Task New Task',
+          icon: () => h(LucideSquarePlus),
+          onClick() {
+            let spaceId = router.currentRoute.value?.params?.spaceId ?? null
+            showNewTaskDialog({
+              defaults: {
+                assigned_to: useUser('sessionUser').name,
+                project: spaceId || '',
+              },
+              onSuccess(doc) {
+                if (doc.project) {
+                  router.push({
+                    name: 'SpaceTask',
+                    params: { taskId: doc.name, spaceId: doc.project },
+                  })
+                } else {
+                  router.push({ name: 'Task', params: { taskId: doc.name } })
+                }
+              },
             })
-          })
+          },
         },
-      },
-    ],
-  },
-])
+        {
+          title: 'Add Page',
+          name: 'add-page',
+          search: 'Add Page New Page',
+          icon: () => h(LucideFilePlus),
+          onClick() {
+            let spaceId = router.currentRoute.value.params?.spaceId ?? null
+
+            const newPage = useNewDoc<GPPage>('GP Page', {
+              title: 'Untitled',
+              content: '',
+            })
+
+            if (spaceId) {
+              newPage.doc.project = spaceId as string
+            }
+
+            newPage.submit().then((doc) => {
+              router.push({
+                name: doc.project ? 'SpacePage' : 'Page',
+                params: doc.project
+                  ? { pageId: doc.name, slug: doc.slug, spaceId: doc.project }
+                  : { pageId: doc.name, slug: doc.slug },
+              })
+            })
+          },
+        },
+      ],
+    },
+  ]
+
+  const github = githubTaskContext.data
+  if (currentTaskId.value && github && (github.repository || github.issue || github.pull_request)) {
+    groups.push({
+      title: 'GitHub',
+      items: [
+        github.issue?.url
+          ? {
+              title: `Open GitHub Issue #${github.issue.number}`,
+              name: 'open-github-issue',
+              search: `GitHub Issue #${github.issue.number} Linked Task`,
+              icon: () => h(LucideGithub),
+              onClick() {
+                window.open(github.issue?.url || '', '_blank', 'noopener,noreferrer')
+              },
+            }
+          : null,
+        github.pull_request?.url
+          ? {
+              title: `Open GitHub PR #${github.pull_request.number}`,
+              name: 'open-github-pr',
+              search: `GitHub Pull Request PR #${github.pull_request.number} Linked Task`,
+              icon: () => h(LucideGitPullRequest),
+              onClick() {
+                window.open(github.pull_request?.url || '', '_blank', 'noopener,noreferrer')
+              },
+            }
+          : null,
+        github.repository?.url
+          ? {
+              title: `Open Repository ${github.repository.label}`,
+              name: 'open-github-repository',
+              search: `GitHub Repository ${github.repository.label}`,
+              icon: () => h(LucideFolderGit2),
+              onClick() {
+                window.open(github.repository?.url || '', '_blank', 'noopener,noreferrer')
+              },
+            }
+          : null,
+        github.repository?.install_url
+          ? {
+              title: `Install GitHub App for ${github.repository.label}`,
+              name: 'install-github-app',
+              search: `GitHub App Install ${github.repository.label}`,
+              icon: () => h(LucideGithub),
+              onClick() {
+                window.open(github.repository?.install_url || '', '_blank', 'noopener,noreferrer')
+              },
+            }
+          : null,
+      ].filter(Boolean) as CommandPaletteItem[],
+    })
+  }
+
+  return groups
+})
 
 function generateSearchResults() {
   let groups = [{ title: 'Spaces', component: markRaw(ItemProject) }, { title: 'People' }]

@@ -20,5 +20,8 @@ function newDraftTask() {
     status: 'Backlog',
     assigned_to: '',
     project: '',
+    om_epic: '',
+    om_sprint: '',
+    om_repository: '',
   })
 }

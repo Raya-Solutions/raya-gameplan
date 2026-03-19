@@ -20,7 +20,7 @@
           v-model="newTask.doc.description"
           @keydown.enter="onCreateClick"
         />
-        <div class="grid grid-cols-2 gap-2">
+        <div class="grid gap-2 sm:grid-cols-2">
           <Combobox
             placeholder="Assign a user"
             :options="assignableUsers"
@@ -44,6 +44,32 @@
               {{ newTask.doc.status }}
             </Button>
           </Dropdown>
+          <Combobox
+            placeholder="Select epic"
+            :options="epicOptions"
+            :modelValue="newTask.doc.om_epic"
+            @update:modelValue="changeEpic"
+          />
+          <Combobox
+            placeholder="Select sprint"
+            :options="sprintOptions"
+            :modelValue="newTask.doc.om_sprint"
+            @update:modelValue="changeSprint"
+          />
+          <Combobox
+            placeholder="Select repository"
+            :options="repositoryOptions"
+            :modelValue="newTask.doc.om_repository"
+            @update:modelValue="changeRepository"
+          />
+          <Dropdown class="w-full" :options="priorityOptions()">
+            <Button>
+              <template #prefix v-if="newTask.doc.priority">
+                <TaskPriorityIcon :priority="newTask.doc.priority" />
+              </template>
+              {{ newTask.doc.priority || 'Set priority' }}
+            </Button>
+          </Dropdown>
         </div>
         <ErrorMessage class="mt-2" :message="newTask.error" />
       </div>
@@ -62,11 +88,13 @@
 import { computed, h, useTemplateRef, watch } from 'vue'
 import { Dialog, FormControl, Dropdown, Combobox, DatePicker } from 'frappe-ui'
 import TaskStatusIcon from './TaskStatusIcon.vue'
+import TaskPriorityIcon from '@/components/icons/TaskPriorityIcon.vue'
 import { activeUsers } from '@/data/users'
 import { GPTask } from '@/types/doctypes'
 import { showDialog, newTask, _onSuccess } from './state'
 import { useGroupedSpaceOptions } from '@/data/groupedSpaces'
 import KeyboardShortcut from '../KeyboardShortcut.vue'
+import { omEpics, omRepositories, omSprints } from '@/data/opsMaturity'
 
 const titleInput = useTemplateRef('titleInput')
 let spaceOptions = useGroupedSpaceOptions({ filterFn: (space) => !space.archived_at })
@@ -87,12 +115,63 @@ function statusOptions() {
   )
 }
 
+function priorityOptions() {
+  return (['Low', 'Medium', 'High'] as Exclude<GPTask['priority'], ''>[]).map((priority) => ({
+    icon: () => h(TaskPriorityIcon, { priority }),
+    label: priority,
+    onClick: () => {
+      if (newTask.value) {
+        newTask.value.doc.priority = priority
+      }
+    },
+  }))
+}
+
 const assignableUsers = computed(() => {
   return activeUsers.value.map((user) => ({
     label: user.full_name,
     value: user.name,
   }))
 })
+
+const epicOptions = computed(() => [
+  { label: 'No epic', value: '' },
+  ...(omEpics.data || []).map((epic) => ({
+    label: `${epic.title} (${epic.name})`,
+    value: epic.name,
+  })),
+])
+
+const sprintOptions = computed(() => [
+  { label: 'No sprint', value: '' },
+  ...(omSprints.data || []).map((sprint) => ({
+    label: `${sprint.title} (${sprint.status})`,
+    value: sprint.name,
+  })),
+])
+
+const repositoryOptions = computed(() => [
+  { label: 'No repository', value: '' },
+  ...(omRepositories.data || []).map((repository) => ({
+    label: repository.full_name || repository.name,
+    value: repository.name,
+  })),
+])
+
+function changeEpic(value: string) {
+  if (!newTask.value) return
+  newTask.value.doc.om_epic = value || ''
+}
+
+function changeSprint(value: string) {
+  if (!newTask.value) return
+  newTask.value.doc.om_sprint = value || ''
+}
+
+function changeRepository(value: string) {
+  if (!newTask.value) return
+  newTask.value.doc.om_repository = value || ''
+}
 
 function onCreateClick(e: KeyboardEvent) {
   if (e instanceof KeyboardEvent && !(e.ctrlKey || e.metaKey)) {

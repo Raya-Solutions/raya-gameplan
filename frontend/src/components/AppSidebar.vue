@@ -277,6 +277,14 @@ const navigation = computed(() => {
       isActive: testRoute(/Drafts/g),
     },
     {
+      name: 'Agile',
+      icon: LucideLayoutGrid,
+      route: {
+        name: 'AgileDelivery',
+      },
+      isActive: testRoute(/AgileDelivery/g),
+    },
+    {
       name: 'Tasks',
       icon: LucideListTodo,
       route: {

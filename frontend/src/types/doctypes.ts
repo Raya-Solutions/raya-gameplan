@@ -43,6 +43,26 @@ export interface GPTask extends DocType {
   completed_by?: string
   /** Comments Count: Int */
   comments_count?: number
+  /** Ops Epic: Link (OM Epic) */
+  om_epic?: string
+  /** Ops Sprint: Link (OM Sprint) */
+  om_sprint?: string
+  /** Ops Repository: Link (OM Repository) */
+  om_repository?: string
+  /** Helpdesk Ticket: Link (HD Ticket) */
+  om_helpdesk_ticket?: string
+  /** GitHub Issue Number: Int */
+  om_github_issue_number?: number
+  /** GitHub Issue URL: Data */
+  om_github_issue_url?: string
+  /** GitHub Issue State: Data */
+  om_github_issue_state?: string
+  /** GitHub PR Number: Int */
+  om_github_pr_number?: number
+  /** GitHub PR URL: Data */
+  om_github_pr_url?: string
+  /** GitHub PR State: Data */
+  om_github_pr_state?: string
 }
 
 // Last updated: 2023-01-16 13:19:48.202430
