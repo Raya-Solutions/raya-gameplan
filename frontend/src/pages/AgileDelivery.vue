@@ -3,7 +3,7 @@
     <PageHeader>
       <Breadcrumbs class="h-7" :items="[{ label: 'Agile Delivery', route: { name: 'AgileDelivery' } }]" />
       <div class="flex items-center gap-2">
-        <Button v-if="showReleasePanel" variant="subtle" @click="releaseDrawerOpen = !releaseDrawerOpen">
+        <Button v-if="showReleasePanel" variant="subtle" @click="toggleReleaseDrawer()">
           {{ releaseDrawerOpen ? 'Hide Release' : 'Release' }}
         </Button>
         <Button variant="subtle" @click="refreshActiveSprint()">Refresh sprint</Button>
@@ -147,7 +147,7 @@
         >
           <div class="flex items-center justify-between border-b px-4 py-2.5">
             <span class="text-sm font-semibold text-ink-gray-8">Sprint Release</span>
-            <Button variant="ghost" size="sm" @click="releaseDrawerOpen = false">
+            <Button variant="ghost" size="sm" @click="toggleReleaseDrawer(false)">
               <LucideX class="h-4 w-4" />
             </Button>
           </div>
@@ -160,7 +160,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, onMounted, ref, useTemplateRef } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, useTemplateRef, watch } from 'vue'
 import { Breadcrumbs, TabButtons, usePageMeta } from 'frappe-ui'
 import { useRoute, useRouter } from 'vue-router'
 import PageHeader from '@/components/PageHeader.vue'
@@ -169,7 +169,7 @@ import TaskDetail from '@/components/TaskDetail.vue'
 import SprintReleasePanel from '@/components/SprintReleasePanel.vue'
 import AgileTaskBoard from '@/components/agile/AgileTaskBoard.vue'
 import { activeSprint, activeSprintSummary, refreshActiveSprint } from '@/data/opsMaturity'
-import { isGitHubConnected } from '@/data/githubConnection'
+import { isGitHubConnected, reloadConnectionStatus } from '@/data/githubConnection'
 import { showNewTaskDialog } from '@/components/NewTaskDialog'
 import { useUser } from '@/data/users'
 
@@ -185,6 +185,7 @@ const boardRef = useTemplateRef<any>('boardRef')
 const releaseDrawerOpen = ref(false)
 const currentSprintName = computed(() => activeSprint.data?.sprint?.name || '')
 const showReleasePanel = computed(() => isGitHubConnected.value && currentSprintName.value && scope.value === 'active')
+const releaseRequested = computed(() => route.query.release === '1')
 
 // Drawer is only allowed to render after mount completes and any
 // persisted ?task= param has been stripped. This prevents a flash
@@ -215,6 +216,7 @@ function setScope(value: 'active' | 'backlog') {
   replaceQuery({
     scope: value === 'active' ? undefined : value,
     task: undefined,
+    release: undefined,
   })
 }
 
@@ -224,6 +226,14 @@ function selectTask(taskId: string) {
 
 function closeTask() {
   replaceQuery({ task: undefined })
+}
+
+function toggleReleaseDrawer(force?: boolean) {
+  if (!showReleasePanel.value) return
+
+  const next = typeof force === 'boolean' ? force : !releaseDrawerOpen.value
+  releaseDrawerOpen.value = next
+  replaceQuery({ release: next ? '1' : undefined })
 }
 
 function openNewTaskDialog() {
@@ -273,6 +283,15 @@ function isTypingTarget(target: EventTarget | null) {
   )
 }
 
+watch([showReleasePanel, releaseRequested], ([canShow, requested]) => {
+  if (!canShow) {
+    releaseDrawerOpen.value = false
+    return
+  }
+
+  releaseDrawerOpen.value = requested
+}, { immediate: true })
+
 function handleKeydown(event: KeyboardEvent) {
   if (event.ctrlKey || event.metaKey || event.altKey || isTypingTarget(event.target)) {
     return
@@ -313,6 +332,7 @@ onMounted(async () => {
   // Wait one tick so the route replacement settles before allowing the drawer.
   await nextTick()
   drawerReady.value = true
+  reloadConnectionStatus()
   refreshActiveSprint()
   document.addEventListener('keydown', handleKeydown)
 })
